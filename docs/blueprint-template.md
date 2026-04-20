@@ -63,7 +63,7 @@
 
 ### Hồ Bảo Thư
 - [TASKS_COMPLETED]: Viết Logic tạo giao diện Dashboard Dashboard (L1, L2, L3) render ra UI cho việc monitor. Thực hiện quá trình Demostration báo cáo Lab, tổng hợp Blueprint Report cuối cùng.
-- [EVIDENCE_LINK]: Commit `017cd277f41c492e5625d55c93f842e3edd7b44d`
+- [EVIDENCE_LINK]: Commit `017cd277f41c492e5625d55c93f842e3edd7b44d`, commit `c0c688892d62cc53fd4dac93f80863bf4fd2abb3`
 
 ---
 
