@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 from pathlib import Path
@@ -13,12 +14,41 @@ from .pii import scrub_text
 LOG_PATH = Path(os.getenv("LOG_PATH", "data/logs.jsonl"))
 
 
+import json
+
+
+class DummyLogger:
+    """Dummy logger that accepts keyword arguments without doing anything."""
+    def msg(self, message=None, **kw):
+        pass
+    
+    def debug(self, message=None, **kw):
+        pass
+    
+    def info(self, message=None, **kw):
+        pass
+    
+    def warning(self, message=None, **kw):
+        pass
+    
+    def error(self, message=None, **kw):
+        pass
+    
+    def critical(self, message=None, **kw):
+        pass
+
+
+class DummyLoggerFactory:
+    """Factory that returns a dummy logger."""
+    def __call__(self, *args, **kwargs):
+        return DummyLogger()
+
+
 class JsonlFileProcessor:
     def __call__(self, logger: Any, method_name: str, event_dict: dict[str, Any]) -> dict[str, Any]:
         LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
-        rendered = structlog.processors.JSONRenderer()(logger, method_name, event_dict)
         with LOG_PATH.open("a", encoding="utf-8") as f:
-            f.write(rendered + "\n")
+            f.write(json.dumps(event_dict) + "\n")
         return event_dict
 
 
@@ -60,7 +90,8 @@ def configure_logging() -> None:
 
             JsonlFileProcessor(),
         ],
-        wrapper_class=structlog.make_filtering_bound_logger(logging.INFO),
+        context_class=dict,
+        logger_factory=DummyLoggerFactory(),
         cache_logger_on_first_use=True,
     )
 
