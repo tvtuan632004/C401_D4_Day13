@@ -26,83 +26,90 @@ Max panels: 6-8
 ### 1. Latency Panel
 - Type: Line chart with SLO threshold
 - Metrics:
-  - P50 (green)
-  - P95 (yellow/orange) - SLO: 800ms target 99%
-  - P99 (red)
+  - P50 (baseline latency)
+  - P95 (primary SLO metric) - SLO: 800ms target 99%
+  - P99 (tail latency / worst-case behavior)
 - Units: milliseconds
 - Threshold Line: 800ms (SLO objective)
-- Incident Flag: `rag_slow` (baseline ~150ms, slow scenario ~2500ms)
+- Incident Flag: `rag_slow` (simulates degraded retrieval latency ~2500ms)
 
 ### 2. Traffic / Request Count (QPS)
-- Type: Bar chart or area chart
+- Type: Line/area chart
 - Metrics:
-  - Total requests (traffic)
-  - Requests per second (QPS)
+  - Total requests per time bucket
+  - Request throughput (QPS approximation)
 - Units: requests/sec
 - Drill-down: By feature (qa, compare, recommend)
+- Purpose: Detect traffic spikes and correlate with latency or errors
 
 ### 3. Error Rate with Breakdown
-- Type: Stacked bar chart + pie chart
+- Type: Line chart (error %) + bar chart (error breakdown)
 - Main Metric: error_rate_pct - SLO: 5% target 99%
 - Breakdown by error type:
-  - Tool failures (rag_tool_fail)
-  - LLM failures
-  - Integration errors
+  - user_error (invalid input / empty message)
+  - system_error (agent / processing failure)
+  - integration_error (external tool/API issues)
 - Units: percentage
-- Incident Flag: `tool_fail` incident
+- Incident Flag: `tool_fail` (simulates tool execution failures)
+- Purpose: Identify reliability issues and root cause distribution
 
 ### 4. Cost Over Time
-- Type: Line chart with cumulative cost
+- Type: Bar + line chart (cost per bucket + cumulative cost)
 - Metrics:
-  - cost_per_request_usd - SLO: $0.003 target 99%
+  - cost_per_request_usd (derived from token usage)
   - total_cost_usd (cumulative)
   - avg_cost_usd
 - Units: USD
 - Threshold Line: $0.003 per request (SLO objective)
-- Incident Flag: `cost_spike` scenario
-- Drill-down: By model (claude-sonnet-4-5)
+- Incident Flag: `cost_spike` (simulates abnormal token usage)
+- Purpose: Monitor cost efficiency and detect abnormal spikes
 
 ### 5. Tokens In/Out Analysis
-- Type: Dual-axis line chart
+- Type: Stacked bar chart
 - Metrics:
-  - tokens_in_total (blue)
-  - tokens_out_total (orange)
-  - ratio (tokens_out / tokens_in)
+  - tokens_in_total
+  - tokens_out_total
+  - implicit ratio (tokens_out / tokens_in)
 - Units: tokens
-- Purpose: Monitor prompt compression and response generation
+- Purpose: Analyze prompt size vs response generation and cost drivers
 
 ### 6. Quality Score / SLO Proxy
-- Type: Gauge + line chart
+- Type: Line chart (time series)
 - Metrics:
   - quality_score_avg - SLO: 0.8 target 95%
-  - quality_score distribution
+  - low_quality_percentage (responses below threshold)
 - Units: 0.0 - 1.0 score
 - Threshold: 0.8 (SLO objective)
-- Note: Heuristic quality based on response characteristics (baseline ~0.8)
+- Note: Quality is heuristic-based (derived from response characteristics)
 
 ---
 
 ## Layer 2: Detailed Metrics
 
 ### Latency Distribution
-- Heatmap or histogram of response times
-- Percentile breakdown: P10, P25, P50, P75, P90, P95, P99
-- Correlation with incidents and feature types
+- Percentile breakdown: P50, P95, P99 (time series)
+- Span-level latency:
+  - rag
+  - llm
+  - agent-run
+- Purpose: Identify bottlenecks within the pipeline
 
 ### Request Breakdown by Feature
 - qa (question answering)
 - compare (vehicle comparison)
 - recommend (recommendation engine)
+- Purpose: Understand feature usage distribution
 
 ### User/Session Analytics
 - Unique users (hashed)
-- Session duration
 - Requests per session
+- Session activity patterns
+- Purpose: Analyze engagement and usage behavior
 
 ### Correlation ID Tracking
-- Trace linking across logs
-- Langfuse trace integration (when enabled)
-- End-to-end request flow visualization
+- Trace requests across logs using correlation_id
+- Link request → response → error events
+- Used in L3 dashboard for debugging and traceability
 
 ---
 
@@ -117,9 +124,9 @@ Max panels: 6-8
 | Quality Score | 0.8 | 95.0% | - | - |
 
 ### Incident Toggles
-- rag_slow: Simulates RAG lookup delays (~2500ms latency spike)
-- tool_fail: Simulates tool execution failures (increases error rate)
-- cost_spike: Simulates cost overruns (exceeds cost_per_request threshold)
+- rag_slow: Simulates latency degradation in retrieval pipeline
+- tool_fail: Simulates downstream tool/API failures
+- cost_spike: Simulates abnormal cost increase due to token inflation
 
 Current Status: Display real-time toggle state
 
@@ -134,25 +141,24 @@ Current Status: Display real-time toggle state
 ## Data Sources
 
 ### Metrics Collection Points
-- `/metrics` endpoint - real-time snapshot
-- `data/logs.jsonl` - structured event logs
-- Correlation ID context propagation
-- Langfuse tracing (optional)
+- `/metrics` endpoint (real-time snapshot from in-memory metrics)
+- `data/logs.jsonl` (structured event logs)
+- Correlation ID propagation across request lifecycle
 
 ### Log Events Tracked
-- `app_started` - startup event with tracing status
-- `request_received` - inbound chat request
-- `response_sent` - response with latency/cost/quality metrics
-- `span_latency` - individual span timings (rag, llm, agent-run)
-- `incident_*` - incident state changes
+- `app_started` - system startup
+- `request_received` - incoming request
+- `response_sent` - successful response with metrics
+- `request_failed` - failed request with error metadata
+- `span_latency` - component-level latency (rag, llm, agent)
 
 ### Context Fields
 - correlation_id
 - user_id_hash
 - session_id
 - feature (qa/compare/recommend)
-- model (claude-sonnet-4-5)
-- env (dev/prod)
+- model
+- environment
 
 ---
 
@@ -160,33 +166,30 @@ Current Status: Display real-time toggle state
 
 ### Color Coding
 - Green: Within SLO thresholds
-- Yellow/Orange: Approaching thresholds
-- Red: Breached SLO
-- Gray: No data / disabled
+- Yellow/Orange: Approaching threshold
+- Red: SLO violation
+- Gray: No data
 
 ### Refresh Behavior
 - Main dashboard: auto-refresh every 15-30 seconds
-- Detailed metrics: on-demand or 1 min refresh
+- Detailed metrics: on-demand
 - Incident toggles: immediate effect
 
 ### Time Range Controls
-- Quick presets: 1h, 6h, 24h, 7d, 28d
-- Custom range selector
-- Relative time (last N minutes)
+- Default: 1 hour
+- Extendable: 6h, 24h (future improvement)
 
 ### Drill-Down Capabilities
-- Click latency panel → see percentile breakdown
-- Click error rate → see error type details
-- Click cost chart → see cost by model/feature
-- Click trace ID → open Langfuse dashboard
+- L1 → L2: aggregated → detailed metrics
+- L2 → L3: metric → raw log trace
+- L3: inspect full request lifecycle
 
 ---
 
 ## Implementation Notes
 
-- All metrics aggregated in-memory (metrics.py)
-- Logs persisted to JSONL for replay/analysis
-- SLO thresholds configurable via slo.yaml
-- Incident simulation via toggle endpoints
-- Optional Langfuse integration for distributed tracing
-
+- Metrics are aggregated in-memory (metrics.py)
+- Logs are stored in JSONL format for replay and analysis
+- Data aggregation is performed in `dashboard_shared.py`
+- Incident simulation is controlled via toggle flags
+- Dashboard rendering is server-side (FastAPI + HTML + Chart.js)
