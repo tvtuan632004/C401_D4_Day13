@@ -8,37 +8,29 @@ from .logging_config import get_logger
 
 # ===== Try import Langfuse =====
 try:
-    from langfuse import observe, get_client, propagate_attributes
+    from langfuse.decorators import observe as langfuse_observe
+    from langfuse import get_client
+    from langfuse.decorators import propagate_attributes
     _LANGFUSE_AVAILABLE = True
-except Exception:  # pragma: no cover
+except ImportError:  # pragma: no cover
     _LANGFUSE_AVAILABLE = False
 
     # ===== Fallbacks =====
-    def observe(*args: Any, **kwargs: Any):
-        def decorator(func):
-            return func
-        return decorator
-
     def propagate_attributes(*args: Any, **kwargs: Any):
         class _DummyCtx:
             def __enter__(self):
                 return self
-
             def __exit__(self, exc_type, exc, tb):
                 return False
-
         return _DummyCtx()
 
     def get_client():
         class _DummyClient:
             def flush(self) -> None:
                 return None
-
             def get_current_trace_id(self) -> str | None:
                 return None
-
         return _DummyClient()
-
 
 def tracing_enabled() -> bool:
     return bool(
@@ -83,5 +75,8 @@ def observe(name: str = "span"):
             )
 
             return result
+            
+        if tracing_enabled():
+            return langfuse_observe(name=name)(wrapper)
         return wrapper
     return decorator
