@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass
-
+from langfuse import observe
 from . import metrics
 from .mock_llm import FakeLLM
 from .mock_rag import retrieve
