@@ -30,6 +30,13 @@ class LabAgent:
     def run(self, user_id: str, feature: str, session_id: str, message: str) -> AgentResult:
         started = time.perf_counter()
 
+        # ===== RAG with error handling =====
+        try:
+            docs = self._retrieve(message)
+        except Exception:
+            docs = []
+
+        # ===== Enrichment + tracing metadata =====
         with propagate_attributes(
             user_id=hash_user_id(user_id),
             session_id=session_id,
@@ -38,8 +45,11 @@ class LabAgent:
                 "feature": feature,
                 "model": self.model,
                 "query_preview": summarize_text(message),
+                "docs_count": len(docs),              # 🔥 NEW
+                "docs_preview": docs[:1] if docs else [],  # 🔥 NEW (optional but xịn)
             },
         ):
+<<<<<<< HEAD
             docs = retrieve(message)
 
             if not docs:
@@ -61,6 +71,18 @@ Hãy tư vấn xe phù hợp và giải thích lý do.
             if not response or not getattr(response, "text", "").strip():
                 raise AgentGenerationError("Agent không tạo được câu trả lời hợp lệ.")
 
+=======
+            # clean prompt (trace readable hơn)
+            prompt = f"""
+            Feature: {feature}
+            Docs: {" | ".join(docs)}
+            Question: {message}
+            """.strip()
+
+            response = self._generate(prompt)
+
+        # ===== Metrics & scoring =====
+>>>>>>> c112f32ddf4d8315c361422e88d31a316a79e52b
         quality_score = self._heuristic_quality(message, response.text, docs)
         latency_ms = int((time.perf_counter() - started) * 1000)
         cost_usd = self._estimate_cost(
@@ -84,6 +106,16 @@ Hãy tư vấn xe phù hợp và giải thích lý do.
             cost_usd=cost_usd,
             quality_score=quality_score,
         )
+
+    # ===== Traced RAG =====
+    @observe(name="rag")
+    def _retrieve(self, message: str):
+        return retrieve(message)
+
+    # ===== Traced LLM =====
+    @observe(name="llm")
+    def _generate(self, prompt: str):
+        return self.llm.generate(prompt)
 
     def _estimate_cost(self, tokens_in: int, tokens_out: int) -> float:
         input_cost = (tokens_in / 1_000_000) * 3

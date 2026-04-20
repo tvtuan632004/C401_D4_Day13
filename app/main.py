@@ -6,6 +6,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from structlog.contextvars import bind_contextvars
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from .agent import LabAgent
@@ -16,12 +17,14 @@ from .metrics import record_error, snapshot
 from .middleware import CorrelationIdMiddleware
 from .pii import hash_user_id, summarize_text
 from .schemas import ChatRequest, ChatResponse
-from .tracing import flush_traces, tracing_enabled
+from .tracing import flush_traces, tracing_enabled, get_client  # 🔥 NEW
 
 configure_logging()
 log = get_logger()
+
 app = FastAPI(title="Day 13 Observability Lab")
 app.add_middleware(CorrelationIdMiddleware)
+
 agent = LabAgent()
 
 
@@ -37,7 +40,11 @@ async def startup() -> None:
 
 @app.get("/health")
 async def health() -> dict:
-    return {"ok": True, "tracing_enabled": tracing_enabled(), "incidents": status()}
+    return {
+        "ok": True,
+        "tracing_enabled": tracing_enabled(),
+        "incidents": status(),
+    }
 
 
 @app.get("/metrics")
@@ -47,14 +54,25 @@ async def metrics() -> dict:
 
 @app.post("/chat", response_model=ChatResponse)
 async def chat(request: Request, body: ChatRequest) -> ChatResponse:
+    # 🔥 Enrichment (FULL)
     bind_contextvars(
         env=os.getenv("APP_ENV", "dev"),
+        correlation_id=request.state.correlation_id,  # 🔥 NEW (VERY IMPORTANT)
         user_id_hash=hash_user_id(body.user_id),
         session_id=body.session_id,
         feature=body.feature,
         model=agent.model,
     )
 
+<<<<<<< HEAD
+=======
+    log.info(
+        "request_received",
+        service="api",
+        payload={"message_preview": summarize_text(body.message)},
+    )
+
+>>>>>>> c112f32ddf4d8315c361422e88d31a316a79e52b
     try:
         if not body.message or not body.message.strip():
             raise EmptyMessageError("Người dùng chưa nhập nội dung câu hỏi.")
@@ -71,8 +89,20 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
             session_id=body.session_id,
             message=body.message,
         )
+
+        # 🔥 Flush trace
         flush_traces()
 
+<<<<<<< HEAD
+=======
+        # 🔥 Get trace_id (VERY IMPORTANT FOR DEMO)
+        trace_id = None
+        try:
+            trace_id = get_client().get_current_trace_id()
+        except Exception:
+            pass
+
+>>>>>>> c112f32ddf4d8315c361422e88d31a316a79e52b
         log.info(
             "response_sent",
             service="api",
@@ -80,6 +110,8 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
             tokens_in=result.tokens_in,
             tokens_out=result.tokens_out,
             cost_usd=result.cost_usd,
+            quality_score=result.quality_score,  # 🔥 NEW
+            trace_id=trace_id,                   # 🔥 NEW
             payload={"answer_preview": summarize_text(result.answer)},
         )
 
@@ -92,6 +124,25 @@ async def chat(request: Request, body: ChatRequest) -> ChatResponse:
             cost_usd=result.cost_usd,
             quality_score=result.quality_score,
         )
+<<<<<<< HEAD
+=======
+
+    except Exception as exc:  # pragma: no cover
+        error_type = type(exc).__name__
+        record_error(error_type)
+
+        log.error(
+            "request_failed",
+            service="api",
+            error_type=error_type,
+            payload={
+                "detail": str(exc),
+                "message_preview": summarize_text(body.message),
+            },
+        )
+
+        raise HTTPException(status_code=500, detail=error_type) from exc
+>>>>>>> c112f32ddf4d8315c361422e88d31a316a79e52b
 
     except AppError as exc:
         record_error(exc.error_code)

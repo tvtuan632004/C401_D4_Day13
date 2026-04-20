@@ -38,15 +38,27 @@ def percentile(values: list[int], p: int) -> float:
 
 
 def snapshot() -> dict:
+    total_errors = sum(ERRORS.values())
+    error_rate = (total_errors / TRAFFIC * 100) if TRAFFIC > 0 else 0.0
+
+    avg_cost = round(mean(REQUEST_COSTS), 4) if REQUEST_COSTS else 0.0
+    avg_quality = round(mean(QUALITY_SCORES), 4) if QUALITY_SCORES else 0.0
+
     return {
         "traffic": TRAFFIC,
-        "latency_p50": percentile(REQUEST_LATENCIES, 50),
-        "latency_p95": percentile(REQUEST_LATENCIES, 95),
-        "latency_p99": percentile(REQUEST_LATENCIES, 99),
-        "avg_cost_usd": round(mean(REQUEST_COSTS), 4) if REQUEST_COSTS else 0.0,
+
+        "latency_p50_ms": percentile(REQUEST_LATENCIES, 50),
+        "latency_p95_ms": percentile(REQUEST_LATENCIES, 95),
+        "latency_p99_ms": percentile(REQUEST_LATENCIES, 99),
+
+        "cost_per_request_usd": avg_cost,  # renamed
         "total_cost_usd": round(sum(REQUEST_COSTS), 4),
+
         "tokens_in_total": sum(REQUEST_TOKENS_IN),
         "tokens_out_total": sum(REQUEST_TOKENS_OUT),
+
+        "error_rate_pct": round(error_rate, 2), 
         "error_breakdown": dict(ERRORS),
-        "quality_avg": round(mean(QUALITY_SCORES), 4) if QUALITY_SCORES else 0.0,
+
+        "quality_score_avg": avg_quality,  # renamed
     }
