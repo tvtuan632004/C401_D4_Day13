@@ -1,16 +1,39 @@
+# service: day13-observability-lab
+# window: 28d
+# slis:
+#   latency_p95_ms:
+#     objective: 3000
+#     target: 99.5
+#     note: Replace with your group's target
+#   error_rate_pct:
+#     objective: 2
+#     target: 99.0
+#   daily_cost_usd:
+#     objective: 2.5
+#     target: 100.0
+#   quality_score_avg:
+#     objective: 0.75
+#     target: 95.0
 service: day13-observability-lab
 window: 28d
+
 slis:
   latency_p95_ms:
-    objective: 3000
-    target: 99.5
-    note: Replace with your group's target
-  error_rate_pct:
-    objective: 2
+    objective: 800
     target: 99.0
-  daily_cost_usd:
-    objective: 2.5
-    target: 100.0
+    note: Baseline ~150ms, rag_slow ~2500ms → dễ detect incident
+
+  error_rate_pct:
+    objective: 5
+    target: 99.0
+    note: Tool failures will increase error rate
+
+  cost_per_request_usd:
+    objective: 0.003
+    target: 99.0
+    note: cost_spike scenario will exceed this threshold
+
   quality_score_avg:
-    objective: 0.75
+    objective: 0.8
     target: 95.0
+    note: heuristic score baseline ~0.8
