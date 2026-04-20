@@ -3,19 +3,19 @@
 > **Instruction**: Fill in all sections below. This report is designed to be parsed by an automated grading assistant. Ensure all tags (e.g., `[GROUP_NAME]`) are preserved.
 
 ## 1. Team Metadata
-- [GROUP_NAME]: 
-- [REPO_URL]: 
-- [MEMBERS]:
-  - Member A: [Name] | Role: Logging & PII
-  - Member B: [Name] | Role: Tracing & Enrichment
-  - Member C: [Name] | Role: SLO & Alerts
-  - Member D: [Name] | Role: Load Test & Dashboard
-  - Member E: [Name] | Role: Demo & Report
+- [GROUP_NAME]: C401-D4 
+- [REPO_URL]: https://github.com/tvtuan632004/C401_D4_Day13
+- [MEMBERS]: Hồ Bảo Thư, Trần Văn Tuấn, Lê Đình Việt
+  - Member A: [Trần Văn Tuấn] | Role: Logging & PII
+  - Member B: [Lê Đình Việt] | Role: Tracing & Enrichment
+  - Member B: [Lê Đình Việt] | Role: SLO & Alerts
+  - Member A + B: [Hồ Bảo Thư + Trần Văn Tuấn] | Role: Load Test & Dashboard
+  - Member E: [Hồ Bảo Thư] | Role: Demo & Report
 
 ---
 
 ## 2. Group Performance (Auto-Verified)
-- [VALIDATE_LOGS_FINAL_SCORE]: /100
+- [VALIDATE_LOGS_FINAL_SCORE]: 100/100
 - [TOTAL_TRACES_COUNT]: 
 - [PII_LEAKS_FOUND]: 
 
