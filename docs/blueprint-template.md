@@ -3,35 +3,19 @@
 > **Instruction**: Fill in all sections below. This report is designed to be parsed by an automated grading assistant. Ensure all tags (e.g., `[GROUP_NAME]`) are preserved.
 
 ## 1. Team Metadata
-<<<<<<< HEAD
-- [GROUP_NAME]: C401-D4 
-- [REPO_URL]: https://github.com/tvtuan632004/C401_D4_Day13
-- [MEMBERS]: Hồ Bảo Thư, Trần Văn Tuấn, Lê Đình Việt
-  - Member A: [Trần Văn Tuấn] | Role: Logging & PII
-  - Member B: [Lê Đình Việt] | Role: Tracing & Enrichment
-  - Member B: [Lê Đình Việt] | Role: SLO & Alerts
-  - Member A + C: [Hồ Bảo Thư + Trần Văn Tuấn] | Role: Load Test & Dashboard
-  - Member C: [Hồ Bảo Thư] | Role: Demo & Report
-=======
 - [GROUP_NAME]: C401_D4
 - [REPO_URL]: https://github.com/tvtuan632004/C401_D4_Day13
 - [MEMBERS]:
   - Member A: Trần Văn Tuấn | Role: Logging & PII, Load Test & Dashboard
   - Member B: Lê Đình Việt | Role: Tracing & Enrichment, SLO & Alerts
   - Member C: Hồ Bảo Thư | Role: Load Test & Dashboard, Demo & Report
->>>>>>> dashboard
 
 ---
 
 ## 2. Group Performance (Auto-Verified)
 - [VALIDATE_LOGS_FINAL_SCORE]: 100/100
-<<<<<<< HEAD
-- [TOTAL_TRACES_COUNT]: 
-- [PII_LEAKS_FOUND]: 
-=======
 - [TOTAL_TRACES_COUNT]: 74
 - [PII_LEAKS_FOUND]: 0
->>>>>>> dashboard
 
 ---
 
@@ -69,38 +53,6 @@
 
 ## 5. Individual Contributions & Evidence
 
-<<<<<<< HEAD
-### [MEMBER_A_NAME]: 
-- [TASKS_COMPLETED]: 
-- [EVIDENCE_LINK]: (Link to specific commit or PR)
-
-### [MEMBER_B_NAME]: Lê Đình Việt
-- [TASKS_COMPLETED]: Tracing & Enrichment + SLO & Alerts
-- [EVIDENCE_LINK]: Commit
-Author: dviet04 <ledinhviet2507@gmail.com>
-Date:   Mon Apr 20 17:28:24 2026 +0700
-
-    update loging to have rag span and llm span
-
-commit 284f2d1e89c04edfbe5c7d0a4d4ed87a90e1a8a3
-Author: dviet04 <ledinhviet2507@gmail.com>
-Date:   Mon Apr 20 17:07:41 2026 +0700
-
-    update span with rag span, llm span  
-
-commit 0a9f4f3f5e76cd13a7ef0431ae5fabc4b83d3141
-Author: dviet04 <ledinhviet2507@gmail.com>
-Date:   Mon Apr 20 17:06:00 2026 +0700
-
-    update SLO & Alerts version2
-
-commit 4a8f35bb8a9c9a825965e2a0605e1a6d9538d937
-Author: dviet04 <ledinhviet2507@gmail.com>
-Date:   Mon Apr 20 16:20:53 2026 +0700
-
-    update agent.py, main.py and tracing.py to implement role: Tracing and Ẻnichment. Version2
-
-=======
 ### Trần Văn Tuấn
 - [TASKS_COMPLETED]: Cấu hình structlog JSON format. Phát triển chức năng filter xoá PII user data trong logs. Hỗ trợ chạy Load Test kích hoạt dữ liệu giả lập.
 - [EVIDENCE_LINK]: [Điền link commit GitHub]
@@ -108,7 +60,6 @@ Date:   Mon Apr 20 16:20:53 2026 +0700
 ### Lê Đình Việt
 - [TASKS_COMPLETED]: Setup hệ thống Tracing OpenTelemetry đầy đủ attribute. Viết logic Middleware nhúng Correlation ID theo request xuyên suốt Agent Pipeline. Đề xuất SLO & Docs Alerts.
 - [EVIDENCE_LINK]: [Điền link commit GitHub]
->>>>>>> dashboard
 
 ### Hồ Bảo Thư
 - [TASKS_COMPLETED]: Viết Logic tạo giao diện Dashboard Dashboard (L1, L2, L3) render ra UI cho việc monitor. Thực hiện quá trình Demostration báo cáo Lab, tổng hợp Blueprint Report cuối cùng.

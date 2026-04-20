@@ -85,14 +85,28 @@ def bucket_15min(ts: str) -> str:
     ts = ts.replace("Z", "")
     if "T" in ts:
         date_part, time_part = ts.split("T", 1)
-
         hour = time_part[:2]
         minute = int(time_part[3:5])
-
         bucket_min = (minute // 15) * 15
         return f"{date_part} {hour}:{bucket_min:02d}"
 
     return ts[:16]
+
+
+def extract_error_label(log_item: dict) -> str:
+    payload = log_item.get("payload", {})
+    if not isinstance(payload, dict):
+        payload = {}
+
+    return str(
+        log_item.get("error_category")
+        or log_item.get("error_code")
+        or log_item.get("error_type")
+        or payload.get("error_category")
+        or payload.get("error_code")
+        or payload.get("error_type")
+        or "UnknownError"
+    )
 
 
 def build_dashboard_data(logs: list[dict]) -> dict:
@@ -140,7 +154,6 @@ def build_dashboard_data(logs: list[dict]) -> dict:
     all_latencies: list[float] = []
     all_quality: list[float] = []
 
-    # Span latency breakdown
     span_latency_map: dict[str, list[float]] = defaultdict(list)
 
     for x in request_logs:
@@ -167,7 +180,9 @@ def build_dashboard_data(logs: list[dict]) -> dict:
         b = bucket_15min(x.get("ts", ""))
         if b in error_map:
             error_map[b] += 1
-        error_type_map[str(x.get("error_type", "UnknownError"))] += 1
+
+        error_label = extract_error_label(x)
+        error_type_map[error_label] += 1
 
     for x in response_logs:
         b = bucket_15min(x.get("ts", ""))

@@ -124,46 +124,65 @@ def render_l1_html(data: dict) -> str:
 
         // 1. Traffic vs Error
         setupChart('trafficErrorChart', {{
-        type: 'line',
-        data: {{
-            labels: data.time_labels || [],
-            datasets: [
-                {{
-                    label: 'Requests',
-                    data: data.traffic || [],
-                    borderColor: '#1b52d3',
-                    backgroundColor: 'rgba(27, 82, 211, 0.1)',
-                    fill: true,
-                    tension: 0.4,
-                    yAxisID: 'y'
+            type: 'line',
+            data: {{
+                labels: data.time_labels || [],
+                datasets: [
+                    {{
+                        label: 'Requests',
+                        data: data.traffic || [],
+                        borderColor: '#1b52d3',
+                        backgroundColor: 'rgba(27, 82, 211, 0.1)',
+                        fill: false,
+                        tension: 0,
+                        yAxisID: 'y'
+                    }},
+                    {{
+                        label: 'Errors',
+                        data: data.error_count || [],
+                        borderColor: '#c0392b',
+                        fill: false,
+                        tension: 0,
+                        yAxisID: 'y'
+                    }},
+                    {{
+                        label: 'Error %',
+                        data: data.error_rate || [],
+                        borderColor: '#e74c3c',
+                        borderDash: [5, 5],
+                        fill: false,
+                        tension: 0,
+                        yAxisID: 'y1'
+                    }}
+                ]
+            }},
+            options: {{
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {{
+                    legend: {{
+                        labels: {{
+                            usePointStyle: true,
+                            pointStyle: 'line'
+                        }}
+                    }}
                 }},
-                {{
-                    label: 'Error %',
-                    data: data.error_rate || [],
-                    borderColor: '#e74c3c',
-                    borderDash: [5, 5],
-                    tension: 0.4,
-                    yAxisID: 'y1'
-                }}
-            ]
-        }},
-        options: {{
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {{
-                legend: {{
-                    labels: {{
-                        usePointStyle: true,
-                        pointStyle: 'line'
+                scales: {{
+                    y: {{
+                        position: 'left',
+                        beginAtZero: true,
+                        title: {{ display: true, text: 'Count' }}
+                    }},
+                    y1: {{
+                        position: 'right',
+                        beginAtZero: true,
+                        min: 0,
+                        grid: {{ drawOnChartArea: false }},
+                        title: {{ display: true, text: 'Error %' }}
                     }}
                 }}
-            }},
-            scales: {{
-                y: {{ position: 'left' }},
-                y1: {{ position: 'right', grid: {{ drawOnChartArea: false }} }}
             }}
-        }}
-    }});
+        }});
 
         // 2. Query Intent
         setupChart('queryTypeChart', {{
@@ -205,13 +224,13 @@ def render_l1_html(data: dict) -> str:
                     label: 'Avg Quality',
                     data: data.avg_quality || [],
                     borderColor: '#2ecc71',
-                    tension: 0.4
+                    tension: 0
                 }},
                 {{
                     label: 'Low Quality %',
                     data: data.low_quality || [],
                     borderColor: '#f1c40f',
-                    tension: 0.4
+                    tension: 0
                 }}
             ]
         }},
