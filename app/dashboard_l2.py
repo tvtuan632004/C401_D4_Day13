@@ -129,7 +129,16 @@ def render_l2_html(data: dict) -> str:
         const commonOptions = {{
             responsive: true,
             maintainAspectRatio: false,
-            plugins: {{ legend: {{ position: 'bottom', labels: {{ usePointStyle: true, padding: 15 }} }} }}
+            plugins: {{
+                legend: {{
+                    position: 'bottom',
+                    labels: {{
+                        usePointStyle: true,
+                        pointStyle: 'line',
+                        padding: 15
+                    }}
+                }}
+            }}
         }};
 
         // 1. Latency Chart

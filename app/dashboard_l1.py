@@ -124,16 +124,46 @@ def render_l1_html(data: dict) -> str:
 
         // 1. Traffic vs Error
         setupChart('trafficErrorChart', {{
-            type: 'line',
-            data: {{
-                labels: data.time_labels || [],
-                datasets: [
-                    {{ label: 'Requests', data: data.traffic || [], borderColor: '#1b52d3', backgroundColor: 'rgba(27, 82, 211, 0.1)', fill: true, tension: 0.4, yAxisID: 'y' }},
-                    {{ label: 'Error %', data: data.error_rate || [], borderColor: '#e74c3c', borderDash: [5,5], tension: 0.4, yAxisID: 'y1' }}
-                ]
+        type: 'line',
+        data: {{
+            labels: data.time_labels || [],
+            datasets: [
+                {{
+                    label: 'Requests',
+                    data: data.traffic || [],
+                    borderColor: '#1b52d3',
+                    backgroundColor: 'rgba(27, 82, 211, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y'
+                }},
+                {{
+                    label: 'Error %',
+                    data: data.error_rate || [],
+                    borderColor: '#e74c3c',
+                    borderDash: [5, 5],
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }}
+            ]
+        }},
+        options: {{
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {{
+                legend: {{
+                    labels: {{
+                        usePointStyle: true,
+                        pointStyle: 'line'
+                    }}
+                }}
             }},
-            options: {{ responsive: true, maintainAspectRatio: false, scales: {{ y: {{ position: 'left' }}, y1: {{ position: 'right', grid: {{ drawOnChartArea: false }} }} }} }}
-        }});
+            scales: {{
+                y: {{ position: 'left' }},
+                y1: {{ position: 'right', grid: {{ drawOnChartArea: false }} }}
+            }}
+        }}
+    }});
 
         // 2. Query Intent
         setupChart('queryTypeChart', {{
@@ -167,16 +197,37 @@ def render_l1_html(data: dict) -> str:
 
         // 4. Quality
         setupChart('qualityOverviewChart', {{
-            type: 'line',
-            data: {{
-                labels: data.time_labels || [],
-                datasets: [
-                    {{ label: 'Avg Quality', data: data.avg_quality || [], borderColor: '#2ecc71', tension: 0.4 }},
-                    {{ label: 'Low Quality %', data: data.low_quality || [], borderColor: '#f1c40f', tension: 0.4 }}
-                ]
-            }},
-            options: {{ responsive: true, maintainAspectRatio: false }}
-        }});
+        type: 'line',
+        data: {{
+            labels: data.time_labels || [],
+            datasets: [
+                {{
+                    label: 'Avg Quality',
+                    data: data.avg_quality || [],
+                    borderColor: '#2ecc71',
+                    tension: 0.4
+                }},
+                {{
+                    label: 'Low Quality %',
+                    data: data.low_quality || [],
+                    borderColor: '#f1c40f',
+                    tension: 0.4
+                }}
+            ]
+        }},
+        options: {{
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {{
+                legend: {{
+                    labels: {{
+                        usePointStyle: true,
+                        pointStyle: 'line'
+                    }}
+                }}
+            }}
+        }}
+    }});
     </script>
     """
     return page_shell("VinFast Dashboard L1", body)
