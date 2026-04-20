@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import math
 from collections import defaultdict
 from pathlib import Path
 from datetime import datetime, timedelta, timezone
+
 
 def bucket_minute(ts: str) -> str:
     if not ts:
@@ -14,11 +16,14 @@ def bucket_minute(ts: str) -> str:
         hhmm = time_part[:5]
         return f"{date_part} {hhmm}"
     return ts[:16]
+
+
 def parse_ts(ts: str) -> datetime | None:
     try:
         return datetime.fromisoformat(ts.replace("Z", "+00:00"))
     except Exception:
         return None
+
 
 def extract_preview(log_item: dict) -> str:
     payload = log_item.get("payload", {})
@@ -46,15 +51,16 @@ def detect_vehicle(text: str) -> str:
             return label
     return "Other / Unspecified"
 
-import math
 
 def percentile(values: list[float], p: float) -> float:
     if not values:
-        return 0.0   # <-- quan trọng
+        return 0.0
 
     values = sorted(values)
     idx = math.ceil((len(values) - 1) * p)
+    idx = min(max(idx, 0), len(values) - 1)
     return round(values[idx], 2)
+
 
 def load_logs(log_file: Path) -> list[dict]:
     raw_lines = log_file.read_text(encoding="utf-8").splitlines()
@@ -71,6 +77,7 @@ def load_logs(log_file: Path) -> list[dict]:
 
     return logs
 
+
 def bucket_15min(ts: str) -> str:
     if not ts:
         return "unknown"
@@ -83,19 +90,16 @@ def bucket_15min(ts: str) -> str:
         minute = int(time_part[3:5])
 
         bucket_min = (minute // 15) * 15
-
         return f"{date_part} {hour}:{bucket_min:02d}"
 
     return ts[:16]
+
+
 def build_dashboard_data(logs: list[dict]) -> dict:
-    request_logs = [x for x in logs if x.get("event") == "request_received"]
-    response_logs = [x for x in logs if x.get("event") == "response_sent"]
-    error_logs = [x for x in logs if x.get("event") == "request_failed"]
     now = datetime.now(timezone.utc)
     cutoff = now - timedelta(hours=24)
 
-    filtered_logs = []
-
+    filtered_logs: list[dict] = []
     for x in logs:
         ts = x.get("ts")
         dt = parse_ts(ts)
@@ -103,6 +107,12 @@ def build_dashboard_data(logs: list[dict]) -> dict:
             filtered_logs.append(x)
 
     logs = filtered_logs
+
+    request_logs = [x for x in logs if x.get("event") == "request_received"]
+    response_logs = [x for x in logs if x.get("event") == "response_sent"]
+    error_logs = [x for x in logs if x.get("event") == "request_failed"]
+    span_logs = [x for x in logs if x.get("event") == "span_latency"]
+
     all_buckets = sorted({
         bucket_15min(x.get("ts", ""))
         for x in logs
@@ -130,9 +140,13 @@ def build_dashboard_data(logs: list[dict]) -> dict:
     all_latencies: list[float] = []
     all_quality: list[float] = []
 
+    # Span latency breakdown
+    span_latency_map: dict[str, list[float]] = defaultdict(list)
+
     for x in request_logs:
         b = bucket_15min(x.get("ts", ""))
-        traffic_map[b] += 1
+        if b in traffic_map:
+            traffic_map[b] += 1
 
         user_id = str(x.get("user_id_hash", "unknown"))
         session_id = str(x.get("session_id", "unknown"))
@@ -151,7 +165,8 @@ def build_dashboard_data(logs: list[dict]) -> dict:
 
     for x in error_logs:
         b = bucket_15min(x.get("ts", ""))
-        error_map[b] += 1
+        if b in error_map:
+            error_map[b] += 1
         error_type_map[str(x.get("error_type", "UnknownError"))] += 1
 
     for x in response_logs:
@@ -164,28 +179,39 @@ def build_dashboard_data(logs: list[dict]) -> dict:
 
         if isinstance(latency, (int, float)):
             latency = float(latency)
-            latency_by_bucket[b].append(latency)
+            if b in latency_by_bucket:
+                latency_by_bucket[b].append(latency)
             all_latencies.append(latency)
 
         if isinstance(quality, (int, float)):
             quality = float(quality)
-            quality_by_bucket[b].append(quality)
+            if b in quality_by_bucket:
+                quality_by_bucket[b].append(quality)
             all_quality.append(quality)
 
         if isinstance(cost, (int, float)):
             cost = float(cost)
-            cost_by_bucket[b] += cost
+            if b in cost_by_bucket:
+                cost_by_bucket[b] += cost
             total_cost += cost
 
         if isinstance(tin, (int, float)):
             tin = int(tin)
-            tokens_in_by_bucket[b] += tin
+            if b in tokens_in_by_bucket:
+                tokens_in_by_bucket[b] += tin
             total_tokens_in += tin
 
         if isinstance(tout, (int, float)):
             tout = int(tout)
-            tokens_out_by_bucket[b] += tout
+            if b in tokens_out_by_bucket:
+                tokens_out_by_bucket[b] += tout
             total_tokens_out += tout
+
+    for x in span_logs:
+        span = str(x.get("span", "unknown"))
+        latency = x.get("latency_ms")
+        if isinstance(latency, (int, float)):
+            span_latency_map[span].append(float(latency))
 
     for (user_id, _session_id), cnt in session_request_count.items():
         user_session_stats[user_id].append(cnt)
@@ -249,9 +275,37 @@ def build_dashboard_data(logs: list[dict]) -> dict:
         sum(all_session_sizes) / len(all_session_sizes), 2
     ) if all_session_sizes else 0.0
 
-    sorted_vehicle_items = sorted(vehicle_map.items(), key=lambda x: x[1], reverse=True) or [("Other / Unspecified", 0)]
-    sorted_query_items = sorted(query_type_map.items(), key=lambda x: x[1], reverse=True) or [("Unknown", 0)]
-    sorted_error_items = sorted(error_type_map.items(), key=lambda x: x[1], reverse=True) or [("NoError", 0)]
+    sorted_vehicle_items = sorted(
+        vehicle_map.items(),
+        key=lambda x: x[1],
+        reverse=True
+    ) or [("Other / Unspecified", 0)]
+
+    sorted_query_items = sorted(
+        query_type_map.items(),
+        key=lambda x: x[1],
+        reverse=True
+    ) or [("Unknown", 0)]
+
+    sorted_error_items = sorted(
+        error_type_map.items(),
+        key=lambda x: x[1],
+        reverse=True
+    ) or [("NoError", 0)]
+
+    sorted_span_items = sorted(
+        span_latency_map.items(),
+        key=lambda item: (sum(item[1]) / len(item[1])) if item[1] else 0.0,
+        reverse=True
+    )
+
+    span_labels = [span for span, _ in sorted_span_items]
+    span_avg = [
+        round(sum(values) / len(values), 2) if values else 0.0
+        for _, values in sorted_span_items
+    ]
+    span_p95 = [percentile(values, 0.95) for _, values in sorted_span_items]
+    span_max = [round(max(values), 2) if values else 0.0 for _, values in sorted_span_items]
 
     return {
         "summary": {
@@ -286,11 +340,16 @@ def build_dashboard_data(logs: list[dict]) -> dict:
             "query_values": [x[1] for x in sorted_query_items],
             "error_type_labels": [x[0] for x in sorted_error_items],
             "error_type_values": [x[1] for x in sorted_error_items],
+            "span_labels": span_labels,
+            "span_avg": span_avg,
+            "span_p95": span_p95,
+            "span_max": span_max,
         },
         "raw": {
             "requests": request_logs,
             "responses": response_logs,
             "errors": error_logs,
+            "spans": span_logs,
         }
     }
 

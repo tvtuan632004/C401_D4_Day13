@@ -15,7 +15,6 @@ def render_l2_html(data: dict) -> str:
     s = data.get("summary", {})
     c = data.get("charts", {})
 
-    # CSS tinh chỉnh đồng bộ với L1
     style_extra = """
     <style>
         :root {
@@ -26,9 +25,17 @@ def render_l2_html(data: dict) -> str:
             --accent-green: #2ecc71;
             --accent-red: #e74c3c;
         }
-        body { background-color: var(--bg-light); font-family: 'Inter', -apple-system, sans-serif; margin: 0; }
-        .dashboard-container { padding: 24px; max-width: 1600px; margin: 0 auto; }
-        
+        body {
+            background-color: var(--bg-light);
+            font-family: 'Inter', -apple-system, sans-serif;
+            margin: 0;
+        }
+        .dashboard-container {
+            padding: 24px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
         .summary {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -42,15 +49,30 @@ def render_l2_html(data: dict) -> str:
             box-shadow: var(--card-shadow);
             border-bottom: 4px solid var(--vin-blue);
         }
-        .label { color: #7f8c8d; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-        .value { color: var(--vin-dark); font-size: 1.6rem; font-weight: 800; margin-top: 8px; }
+        .label {
+            color: #7f8c8d;
+            font-size: 0.8rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .value {
+            color: var(--vin-dark);
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-top: 8px;
+        }
 
         .grid-3 {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
             gap: 24px;
         }
-        @media (max-width: 1024px) { .grid-3 { grid-template-columns: 1fr; } }
+        @media (max-width: 1024px) {
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+        }
 
         .card {
             background: #fff;
@@ -69,7 +91,11 @@ def render_l2_html(data: dict) -> str:
             border-left: 4px solid var(--vin-blue);
             padding-left: 12px;
         }
-        .chart-container { flex-grow: 1; position: relative; width: 100%; }
+        .chart-container {
+            flex-grow: 1;
+            position: relative;
+            width: 100%;
+        }
     </style>
     """
 
@@ -102,6 +128,11 @@ def render_l2_html(data: dict) -> str:
             </div>
 
             <div class="card">
+                <h3>Span Latency Breakdown (ms)</h3>
+                <div class="chart-container"><canvas id="spanLatencyChart"></canvas></div>
+            </div>
+
+            <div class="card">
                 <h3>Traffic & Error Performance</h3>
                 <div class="chart-container"><canvas id="trafficErrorChart"></canvas></div>
             </div>
@@ -126,6 +157,7 @@ def render_l2_html(data: dict) -> str:
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         const data = {json.dumps(c)} || {{}};
+
         const commonOptions = {{
             responsive: true,
             maintainAspectRatio: false,
@@ -145,69 +177,196 @@ def render_l2_html(data: dict) -> str:
         new Chart(document.getElementById('latencyChart'), {{
             type: 'line',
             data: {{
-                labels: data.time_labels,
+                labels: data.time_labels || [],
                 datasets: [
-                    {{ label: 'P50', data: data.latency_p50, borderColor: '#3498db', tension: 0.3, fill: false }},
-                    {{ label: 'P95', data: data.latency_p95, borderColor: '#f1c40f', tension: 0.3, fill: false }},
-                    {{ label: 'P99', data: data.latency_p99, borderColor: '#e74c3c', tension: 0.3, fill: false }}
+                    {{
+                        label: 'P50',
+                        data: data.latency_p50 || [],
+                        borderColor: '#3498db',
+                        tension: 0.3,
+                        fill: false
+                    }},
+                    {{
+                        label: 'P95',
+                        data: data.latency_p95 || [],
+                        borderColor: '#f1c40f',
+                        tension: 0.3,
+                        fill: false
+                    }},
+                    {{
+                        label: 'P99',
+                        data: data.latency_p99 || [],
+                        borderColor: '#e74c3c',
+                        tension: 0.3,
+                        fill: false
+                    }}
                 ]
             }},
             options: commonOptions
         }});
 
-        // 2. Traffic & Error Rate
+        // 2. Span Latency Breakdown
+        new Chart(document.getElementById('spanLatencyChart'), {{
+            type: 'bar',
+            data: {{
+                labels: data.span_labels || [],
+                datasets: [
+                    {{
+                        label: 'Avg (mean latency)',
+                        data: data.span_avg || [],
+                        backgroundColor: '#3498db'
+                    }},
+                    {{
+                        label: 'P95 (tail latency)',
+                        data: data.span_p95 || [],
+                        backgroundColor: '#f39c12'
+                    }},
+                    {{
+                        label: 'Max (worst case)',
+                        data: data.span_max || [],
+                        backgroundColor: '#e74c3c'
+                    }}
+                ]
+            }},
+            options: {{
+                ...commonOptions,
+                plugins: {{
+                    legend: {{
+                        position: 'bottom',
+                        labels: {{
+                            boxWidth: 12,
+                            padding: 15
+                        }}
+                    }}
+                }},
+                scales: {{
+                    y: {{
+                        beginAtZero: true,
+                        title: {{
+                            display: true,
+                            text: 'Latency (ms)'
+                        }}
+                    }}
+                }}
+            }}
+        }});
+
+        // 3. Traffic & Error Rate
         new Chart(document.getElementById('trafficErrorChart'), {{
             type: 'line',
             data: {{
-                labels: data.time_labels,
+                labels: data.time_labels || [],
                 datasets: [
-                    {{ label: 'Requests', data: data.traffic, borderColor: '#1b52d3', backgroundColor: 'rgba(27, 82, 211, 0.1)', fill: true, yAxisID: 'y' }},
-                    {{ label: 'Error Rate %', data: data.error_rate, borderColor: '#e74c3c', borderDash: [5,5], yAxisID: 'y1' }}
+                    {{
+                        label: 'Requests',
+                        data: data.traffic || [],
+                        borderColor: '#1b52d3',
+                        backgroundColor: 'rgba(27, 82, 211, 0.1)',
+                        fill: true,
+                        yAxisID: 'y'
+                    }},
+                    {{
+                        label: 'Error Rate %',
+                        data: data.error_rate || [],
+                        borderColor: '#e74c3c',
+                        borderDash: [5, 5],
+                        yAxisID: 'y1'
+                    }}
                 ]
             }},
             options: {{
                 ...commonOptions,
                 scales: {{
-                    y: {{ position: 'left', title: {{ display: true, text: 'Requests' }} }},
-                    y1: {{ position: 'right', grid: {{ drawOnChartArea: false }}, title: {{ display: true, text: 'Error %' }} }}
+                    y: {{
+                        position: 'left',
+                        title: {{
+                            display: true,
+                            text: 'Requests'
+                        }}
+                    }},
+                    y1: {{
+                        position: 'right',
+                        grid: {{
+                            drawOnChartArea: false
+                        }},
+                        title: {{
+                            display: true,
+                            text: 'Error %'
+                        }}
+                    }}
                 }}
             }}
         }});
 
-        // 3. Cost Chart
+        // 4. Cost Chart
         new Chart(document.getElementById('costChart'), {{
             type: 'line',
             data: {{
-                labels: data.time_labels,
+                labels: data.time_labels || [],
                 datasets: [
-                    {{ label: 'Cost / bucket', data: data.cost, borderColor: '#2ecc71', type: 'bar', backgroundColor: 'rgba(46, 204, 113, 0.5)' }},
-                    {{ label: 'Cumulative cost', data: data.cumulative_cost, borderColor: '#27ae60', tension: 0.3 }}
+                    {{
+                        label: 'Cost / bucket',
+                        data: data.cost || [],
+                        borderColor: '#2ecc71',
+                        type: 'bar',
+                        backgroundColor: 'rgba(46, 204, 113, 0.5)'
+                    }},
+                    {{
+                        label: 'Cumulative cost',
+                        data: data.cumulative_cost || [],
+                        borderColor: '#27ae60',
+                        tension: 0.3
+                    }}
                 ]
             }},
             options: commonOptions
         }});
 
-        // 4. Token Chart
+        // 5. Token Chart
         new Chart(document.getElementById('tokenChart'), {{
             type: 'bar',
             data: {{
-                labels: data.time_labels,
+                labels: data.time_labels || [],
                 datasets: [
-                    {{ label: 'Tokens In', data: data.tokens_in, backgroundColor: '#34495e' }},
-                    {{ label: 'Tokens Out', data: data.tokens_out, backgroundColor: '#1b52d3' }}
+                    {{
+                        label: 'Tokens In',
+                        data: data.tokens_in || [],
+                        backgroundColor: '#34495e'
+                    }},
+                    {{
+                        label: 'Tokens Out',
+                        data: data.tokens_out || [],
+                        backgroundColor: '#1b52d3'
+                    }}
                 ]
             }},
-            options: {{ ...commonOptions, scales: {{ x: {{ stacked: true }}, y: {{ stacked: true }} }} }}
+            options: {{
+                ...commonOptions,
+                scales: {{
+                    x: {{ stacked: true }},
+                    y: {{ stacked: true }}
+                }}
+            }}
         }});
 
-        // 5. Error Type Breakdown
+        // 6. Error Type Breakdown
         new Chart(document.getElementById('errorTypeChart'), {{
             type: 'bar',
             data: {{
-                labels: data.error_type_labels,
-                datasets: [{{ label: 'Count', data: data.error_type_values, backgroundColor: '#e74c3c', borderRadius: 6 }}]
+                labels: data.error_type_labels || [],
+                datasets: [
+                    {{
+                        label: 'Count',
+                        data: data.error_type_values || [],
+                        backgroundColor: '#e74c3c',
+                        borderRadius: 6
+                    }}
+                ]
             }},
-            options: {{ ...commonOptions, indexAxis: 'y' }}
+            options: {{
+                ...commonOptions,
+                indexAxis: 'y'
+            }}
         }});
     </script>
     """
