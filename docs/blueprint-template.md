@@ -63,11 +63,28 @@
 
 ### Hồ Bảo Thư
 - [TASKS_COMPLETED]: Viết Logic tạo giao diện Dashboard Dashboard (L1, L2, L3) render ra UI cho việc monitor. Thực hiện quá trình Demostration báo cáo Lab, tổng hợp Blueprint Report cuối cùng.
-- [EVIDENCE_LINK]: [Điền link commit GitHub]
+- [EVIDENCE_LINK]: Commit `017cd277f41c492e5625d55c93f842e3edd7b44d`
 
 ---
 
 ## 6. Bonus Items (Optional)
-- [BONUS_COST_OPTIMIZATION]: (Description + Evidence)
-- [BONUS_AUDIT_LOGS]: (Description + Evidence)
-- [BONUS_CUSTOM_METRIC]: (Description + Evidence)
+- [BONUS_COST_OPTIMIZATION]: Implemented cost tracking and simulation using token-based pricing. 
+The system monitors cost per request and detects abnormal spikes via incident simulation (cost_spike flag).
+
+- [EVIDENCE]: mock_llm.py (cost spike simulation)
+metrics.py (cost tracking)
+dashboard L2 (cost trend chart)
+
+- [BONUS_AUDIT_LOGS]: Implemented structured audit logging with full request lifecycle tracking. 
+Each log includes correlation_id, user/session context, and sanitized payloads to ensure traceability and privacy.
+
+- [EVIDENCE]: logging_config.py (JSONL logging + PII scrub)
+main.py (request_received / response_sent / request_failed)
+middleware.py (correlation_id injection)
+
+- [BONUS_CUSTOM_METRIC]: Defined custom metrics including quality_score, error_breakdown, and token usage. 
+These metrics enable deeper evaluation beyond standard latency and error rate.
+
+- [EVIDENCE]: metrics.py (quality_score, error tracking)
+main.py (/metrics endpoint)
+dashboard L1 & L2 (quality + error visualization)
